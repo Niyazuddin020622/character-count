@@ -1,0 +1,350 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Character & Word Counter</title>
+  <meta name="description" content="Fast, beautiful character counter with word, space, sentence, paragraph counts, reading time, and more." />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='0.9em' font-size='90'>✍️</text></svg>">
+  <style>
+    :root{
+      --bg: #0b1020;
+      --panel: #111936;
+      --panel-2: #0f1530;
+      --text: #e7ecff;
+      --muted: #9fb0ff;
+      --accent: #7c5cff;
+      --accent-2: #32d9ff;
+      --good: #13d38e;
+      --warn: #ffb020;
+      --danger: #ff4d6d;
+      --shadow: 0 10px 30px rgba(0,0,0,.35);
+      --radius: 18px;
+    }
+    *{box-sizing: border-box}
+    html,body{height:100%}
+    body{
+      margin:0; font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial;
+      background: radial-gradient(1200px 600px at 10% -10%, rgba(124,92,255,.25), transparent 60%),
+                  radial-gradient(900px 500px at 120% 10%, rgba(50,217,255,.20), transparent 60%),
+                  var(--bg);
+      color:var(--text);
+      display:flex; flex-direction:column; min-height:100vh;
+    }
+    header{
+      position:sticky; top:0; z-index:10; backdrop-filter: blur(10px);
+      background: linear-gradient(180deg, rgba(11,16,32,.9), rgba(11,16,32,.6));
+      border-bottom: 1px solid rgba(255,255,255,.05);
+    }
+    .wrap{max-width:1100px; margin:0 auto; padding:16px 20px}
+    .brand{display:flex; align-items:center; gap:12px}
+    .logo{width:38px; height:38px; display:grid; place-items:center; border-radius:12px;
+      background: conic-gradient(from 180deg at 50% 50%, var(--accent), var(--accent-2), var(--accent));
+      box-shadow: var(--shadow);
+    }
+    .logo span{filter: drop-shadow(0 2px 4px rgba(0,0,0,.3));}
+    .brand h1{font-size:20px; margin:0; letter-spacing:.2px}
+    .sub{font-size:12px; color:var(--muted); margin:2px 0 0}
+
+    .container{display:grid; grid-template-columns: 1.2fr .8fr; gap:18px; padding:22px 20px; width:100%; max-width:1100px; margin:0 auto}
+    @media (max-width: 950px){.container{grid-template-columns:1fr;}}
+
+    .editor{
+      background: linear-gradient(180deg, var(--panel), var(--panel-2));
+      border:1px solid rgba(255,255,255,.06);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      display:flex; flex-direction:column; min-height:420px; position:relative; overflow:hidden;
+    }
+    .toolbar{display:flex; gap:8px; padding:10px; border-bottom:1px solid rgba(255,255,255,.06); align-items:center; flex-wrap:wrap}
+    .btn{
+      display:inline-flex; align-items:center; gap:8px; padding:10px 12px; border-radius:12px; border:1px solid rgba(255,255,255,.08);
+      background: rgba(255,255,255,.03); color:var(--text); cursor:pointer; user-select:none;
+      transition: transform .06s ease, background .2s ease, border-color .2s ease;
+    }
+    .btn:hover{background: rgba(255,255,255,.06)}
+    .btn:active{transform: translateY(1px)}
+    .btn.small{padding:8px 10px; font-size:13px}
+    .btn.ghost{background:transparent}
+
+    .area-wrap{position:relative; flex:1;}
+    textarea{
+      width:100%; height:100%; resize:none; background:transparent; color:var(--text);
+      border:0; outline:0; padding:18px; font-size:16px; line-height:1.65; caret-color:var(--accent-2);
+    }
+    .placeholder{position:absolute; top:18px; left:18px; color:rgba(255,255,255,.35); pointer-events:none}
+
+    .dropzone{position:absolute; inset:0; border:2px dashed rgba(124,92,255,.35); border-radius: calc(var(--radius) - 8px); margin:8px; display:none; place-items:center; font-weight:600; color:var(--muted); background: rgba(124,92,255,.08)}
+
+    .panel{
+      background: linear-gradient(180deg, rgba(255,255,255,.03), rgba(255,255,255,.01));
+      border:1px solid rgba(255,255,255,.06);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding:14px;
+    }
+
+    .stats{display:grid; grid-template-columns: repeat(3, 1fr); gap:12px}
+    @media (max-width: 600px){.stats{grid-template-columns: repeat(2, 1fr)}}
+
+    .card{background: radial-gradient(120% 120% at 0% 0%, rgba(124,92,255,.10), transparent 40%),
+                   radial-gradient(120% 120% at 100% 100%, rgba(50,217,255,.10), transparent 40%),
+                   rgba(255,255,255,.02);
+      border:1px solid rgba(255,255,255,.06); border-radius:16px; padding:12px 12px; display:flex; flex-direction:column; gap:4px; position:relative; overflow:hidden}
+    .label{font-size:12px; color:var(--muted)}
+    .value{font-weight:800; font-variant-numeric: tabular-nums; font-size:22px}
+    .value.pop{animation: pop .35s ease}
+    @keyframes pop{0%{transform:scale(1);}40%{transform:scale(1.1);}100%{transform:scale(1);}}
+
+    .progress{height:8px; background: rgba(255,255,255,.06); border-radius:999px; overflow:hidden}
+    .progress > div{height:100%; width:0; background: linear-gradient(90deg, var(--accent), var(--accent-2)); transition: width .35s ease}
+
+    .foot{display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap; color:var(--muted); font-size:12px; padding:8px 4px 0}
+
+    .toggle{position:relative; width:54px; height:30px; background:rgba(255,255,255,.08); border:1px solid rgba(255,255,255,.12); border-radius:999px; cursor:pointer}
+    .knob{position:absolute; top:3px; left:3px; width:24px; height:24px; border-radius:50%; background:linear-gradient(180deg,#fff,#d9defa); transition:left .25s ease}
+    body.light{--bg:#f7f8ff; --panel:#fff; --panel-2:#f7f8ff; --text:#0c1222; --muted:#5c6a9b;}
+    body.light .knob{background:linear-gradient(180deg,#111936,#1c2748)}
+    body.light .toggle{background:#eaf0ff}
+
+    .kbd{font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; border:1px solid rgba(255,255,255,.12); padding:.1rem .4rem; border-radius:6px; background: rgba(255,255,255,.05)}
+
+    .hint{font-size:12px; color:var(--muted); margin-top:6px}
+    .footer{opacity:.7; font-size:12px; text-align:center; padding:10px 0 20px}
+
+    .chip{font-size:11px; padding:6px 8px; border:1px dashed rgba(255,255,255,.2); border-radius:999px; color:var(--muted)}
+
+    .hidden{display:none}
+  </style>
+</head>
+<body>
+  <header>
+    <div class="wrap" style="display:flex; align-items:center; justify-content:space-between; gap:12px;">
+      <div class="brand">
+        <div class="logo"><span>✍️</span></div>
+        <div>
+          <h1>Character & Word Counter</h1>
+          <p class="sub">Live counts • Clean design • Super fast</p>
+        </div>
+      </div>
+      <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap">
+        <span class="chip" id="charLimitChip">No limit</span>
+        <div class="toggle" id="themeToggle" title="Toggle theme"><div class="knob"></div></div>
+      </div>
+    </div>
+  </header>
+
+  <main class="container">
+    <!-- Editor Side -->
+    <section class="editor" id="editor">
+      <div class="toolbar">
+        <button class="btn" id="btnCopy" title="Copy to clipboard">📋 Copy</button>
+        <button class="btn" id="btnClear" title="Clear text">🧹 Clear</button>
+        <button class="btn" id="btnDownload" title="Download as .txt">⬇️ Download</button>
+        <label class="btn" for="fileInput" title="Upload .txt / .md / .csv">📤 Upload<input id="fileInput" type="file" accept=".txt,.md,.csv,.json" class="hidden"></label>
+        <div style="margin-left:auto; display:flex; align-items:center; gap:8px">
+          <span class="label">Char limit</span>
+          <input type="number" id="charLimit" class="btn small" style="width:110px" placeholder="e.g. 160" min="0">
+          <button class="btn small ghost" id="resetLimit">Reset</button>
+        </div>
+      </div>
+      <div class="area-wrap">
+        <div class="dropzone" id="dropzone">Drop file to load…</div>
+        <textarea id="text" placeholder="" spellcheck="true"></textarea>
+        <div class="placeholder" id="ph">Start typing… or paste text. Drag & drop a file to load it.</div>
+      </div>
+      <div class="wrap foot" style="padding:10px 12px 12px">
+        <div>Tips: Use <span class="kbd">Ctrl</span> + <span class="kbd">B</span> to toggle theme · <span class="kbd">Ctrl</span> + <span class="kbd">K</span> to clear</div>
+        <div id="limitInfo">—</div>
+      </div>
+    </section>
+
+    <!-- Stats Side -->
+    <aside class="panel">
+      <div class="stats" id="stats">
+        <div class="card"><div class="label">Characters (all)</div><div class="value" data-key="chars">0</div></div>
+        <div class="card"><div class="label">Characters (no spaces)</div><div class="value" data-key="charsNoSpaces">0</div></div>
+        <div class="card"><div class="label">Words</div><div class="value" data-key="words">0</div></div>
+        <div class="card"><div class="label">Spaces</div><div class="value" data-key="spaces">0</div></div>
+        <div class="card"><div class="label">Sentences</div><div class="value" data-key="sentences">0</div></div>
+        <div class="card"><div class="label">Paragraphs</div><div class="value" data-key="paragraphs">0</div></div>
+        <div class="card"><div class="label">Lines</div><div class="value" data-key="lines">0</div></div>
+        <div class="card"><div class="label">Avg. word length</div><div class="value" data-key="avgWordLen">0</div></div>
+        <div class="card"><div class="label">Longest word</div><div class="value" data-key="longestWord">—</div></div>
+      </div>
+
+      <div style="margin-top:14px" class="card">
+        <div class="label">Estimated reading time</div>
+        <div class="value" id="readTime">0 sec</div>
+        <div class="progress" style="margin-top:8px"><div id="rtProgress"></div></div>
+        <div class="hint">~200 words/min reading · ~130 words/min speaking</div>
+      </div>
+
+      <div class="foot">
+        <div>Counts update live as you type.</div>
+        <div>Made with ❤ for writers & devs.</div>
+      </div>
+    </aside>
+  </main>
+
+  <div class="footer">Keyboard: <span class="kbd">Ctrl</span>+<span class="kbd">B</span> theme · <span class="kbd">Ctrl</span>+<span class="kbd">K</span> clear · <span class="kbd">Ctrl</span>+<span class="kbd">S</span> download</div>
+
+  <script>
+    const $ = s => document.querySelector(s);
+    const text = $('#text');
+    const ph = $('#ph');
+    const statsWrap = $('#stats');
+    const readTimeEl = $('#readTime');
+    const rtProgress = $('#rtProgress');
+    const charLimitInput = $('#charLimit');
+    const limitInfo = $('#limitInfo');
+    const charLimitChip = $('#charLimitChip');
+    const themeToggle = $('#themeToggle');
+    const dropzone = $('#dropzone');
+
+    const values = {
+      chars:0, charsNoSpaces:0, words:0, spaces:0,
+      sentences:0, paragraphs:0, lines:0,
+      avgWordLen:0, longestWord:'—'
+    };
+
+    function countAll(s){
+      const raw = s || '';
+      const chars = raw.length;
+      const spaces = (raw.match(/ /g) || []).length; // literal spaces only
+      const charsNoSpaces = raw.replace(/\s/g,'').length;
+      const lines = raw.length ? raw.split(/\n/).length : 0;
+      const paras = raw.trim() ? raw.trim().split(/\n\s*\n+/).length : 0;
+      const sentences = raw.trim() ? (raw.match(/[^.!?\n]+[.!?]+(?:\s|$)/g) || []).length + (/[.!?]$/.test(raw.trim())?0: (raw.trim()?1:0)) : 0;
+      const wordsArr = raw.trim() ? raw.trim().match(/[\p{L}\p{N}\u2019'\-]+/gu) : [];
+      const words = wordsArr ? wordsArr.length : 0;
+      let avgWordLen = 0, longestWord = '—';
+      if(wordsArr && wordsArr.length){
+        const totalLen = wordsArr.reduce((a,w)=>a+w.length,0);
+        avgWordLen = (totalLen/wordsArr.length).toFixed(2);
+        longestWord = wordsArr.reduce((a,w)=> w.length>a.length? w : a, '');
+      }
+      return {chars, charsNoSpaces, words, spaces, lines, paragraphs:paras, sentences, avgWordLen, longestWord};
+    }
+
+    function updateUI(res){
+      for(const [k,v] of Object.entries(res)){
+        const el = statsWrap.querySelector(`[data-key="${k}"]`);
+        if(!el) continue;
+        const old = el.textContent;
+        const val = (k==='avgWordLen')? v : (k==='longestWord'? v || '—' : Number(v||0).toLocaleString());
+        if(old!==String(val)){
+          el.textContent = val;
+          el.classList.remove('pop');
+          void el.offsetWidth; // restart animation
+          el.classList.add('pop');
+        }
+      }
+      // reading time
+      const w = res.words || 0;
+      const readSeconds = Math.max(1, Math.round((w/200)*60));
+      const speakSeconds = Math.max(1, Math.round((w/130)*60));
+      readTimeEl.textContent = `${formatTime(readSeconds)} · speak ${formatTime(speakSeconds)}`;
+      rtProgress.style.width = `${Math.min(100, (w/200)*100)}%`;
+
+      // placeholder visibility
+      ph.style.display = text.value.length? 'none':'block';
+
+      // char limit
+      const limit = Number(charLimitInput.value||0);
+      if(limit>0){
+        const remain = limit - res.chars;
+        const status = remain>=0? `${remain.toLocaleString()} left` : `${Math.abs(remain).toLocaleString()} over`;
+        limitInfo.textContent = status;
+        charLimitChip.textContent = `${limit.toLocaleString()} cap`;
+        charLimitChip.style.border = '1px solid rgba(255,255,255,.25)';
+        charLimitChip.style.color = remain>=0? 'var(--muted)': 'var(--danger)';
+      } else {
+        limitInfo.textContent = '—';
+        charLimitChip.textContent = 'No limit';
+        charLimitChip.style.color = 'var(--muted)';
+      }
+    }
+
+    function formatTime(sec){
+      if(sec<60) return `${sec}s`;
+      const m = Math.floor(sec/60), s = sec%60;
+      return `${m}m ${s}s`;
+    }
+
+    function refresh(){ updateUI(countAll(text.value)); }
+
+    // Theme toggle + persist
+    function setTheme(mode){
+      document.body.classList.toggle('light', mode==='light');
+      localStorage.setItem('cw-theme', mode);
+      themeToggle.querySelector('.knob').style.left = (mode==='light'? '27px':'3px');
+    }
+    const saved = localStorage.getItem('cw-theme') || (window.matchMedia('(prefers-color-scheme: light)').matches? 'light':'dark');
+    setTheme(saved);
+    themeToggle.addEventListener('click',()=> setTheme(document.body.classList.contains('light')? 'dark':'light'));
+
+    // Inputs
+    text.addEventListener('input', refresh);
+    text.addEventListener('paste', e=> setTimeout(refresh));
+
+    // Buttons
+    $('#btnClear').addEventListener('click', ()=>{ text.value=''; refresh(); text.focus(); });
+    $('#btnCopy').addEventListener('click', async ()=>{
+      try{ await navigator.clipboard.writeText(text.value); flash('Copied to clipboard'); }
+      catch{ flash('Copy failed'); }
+    });
+    $('#btnDownload').addEventListener('click', ()=>{
+      const blob = new Blob([text.value], {type:'text/plain'});
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = 'text-'+ new Date().toISOString().slice(0,19).replace(/[:T]/g,'-') + '.txt';
+      document.body.appendChild(a); a.click(); a.remove();
+    });
+
+    // Upload & Drag-drop
+    const fileInput = $('#fileInput');
+    fileInput.addEventListener('change', async ()=>{
+      const f = fileInput.files[0]; if(!f) return;
+      const txt = await f.text(); text.value = txt; refresh();
+    });
+
+    ;['dragenter','dragover'].forEach(evt=>{
+      text.addEventListener(evt, (e)=>{ e.preventDefault(); dropzone.style.display='grid'; });
+    });
+    ;['dragleave','drop'].forEach(evt=>{
+      text.addEventListener(evt, (e)=>{ e.preventDefault(); dropzone.style.display='none'; });
+    });
+    text.addEventListener('drop', async (e)=>{
+      e.preventDefault();
+      const f = e.dataTransfer.files && e.dataTransfer.files[0];
+      if(f){ const txt = await f.text(); text.value = txt; refresh(); }
+    });
+
+    // Character limit controls
+    $('#resetLimit').addEventListener('click', ()=>{ charLimitInput.value = ''; refresh(); });
+    charLimitInput.addEventListener('input', refresh);
+
+    // Keyboard shortcuts
+    document.addEventListener('keydown', (e)=>{
+      if((e.ctrlKey||e.metaKey) && e.key.toLowerCase()==='b'){ e.preventDefault(); themeToggle.click(); }
+      if((e.ctrlKey||e.metaKey) && e.key.toLowerCase()==='k'){ e.preventDefault(); $('#btnClear').click(); }
+      if((e.ctrlKey||e.metaKey) && e.key.toLowerCase()==='s'){ e.preventDefault(); $('#btnDownload').click(); }
+    });
+
+    // Tiny toast
+    function flash(msg){
+      const t = document.createElement('div');
+      t.textContent = msg;
+      t.style.cssText = `position:fixed; left:50%; top:18px; transform:translateX(-50%); background:rgba(0,0,0,.7);`+
+        `color:#fff; padding:10px 14px; border-radius:999px; z-index:9999; font-size:13px;`;
+      document.body.appendChild(t);
+      setTimeout(()=>{ t.style.transition='all .3s ease'; t.style.opacity='0'; t.style.transform='translateX(-50%) translateY(-6px)'; }, 1300);
+      setTimeout(()=> t.remove(), 1700);
+    }
+
+    // Initial
+    refresh();
+  </script>
+</body>
+</html>
