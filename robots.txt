@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://charcountt.netlify.app/sitemap.xml

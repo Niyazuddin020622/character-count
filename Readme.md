@@ -18,7 +18,7 @@ Built with **HTML, CSS, and JavaScript**, featuring a clean UI, smooth animation
 (यहाँ आप screenshot डाल सकते हैं या Netlify लिंक)
 
 ## 🌐 Live Demo
-👉 [Click here](https://your-netlify-link.netlify.app)
+👉 [Click here](https://charcountt.netlify.app/)
 
 ## 🛠️ Tech Stack
 - HTML5
@@ -28,4 +28,4 @@ Built with **HTML, CSS, and JavaScript**, featuring a clean UI, smooth animation
 ## 📂 Setup
 1. Clone the repo:
    ```bash
-   git clone https://github.com/your-username/character-count.git
+   git clone https://github.com/Niyazuddin020622/character-count.git
